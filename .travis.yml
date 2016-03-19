@@ -1,0 +1,18 @@
+sudo: required
+language: rust
+rust:
+- nightly
+- beta
+- 1.0.0
+- 1.1.0
+- 1.2.0
+- 1.3.0
+- stable
+env:
+  global:
+  - secure: FvYVxWpo/Au885KA/OJG81X4ICag/7yuY+Fr8vr0GSFNxxM/wXICZCRzqBGaZRQSQpnXi0sDIVLSLl3gzMIcxftqVlL3FDzpn4OJUR9JTtFl1QQamSrWhqJiIo4aZCheB81rVe1F8tlnlP2M3+8coS4TU/f3J9NQSziKOhGMm4Ys0HKziHoTEz7iricITvAsHR02opW1fCzn9LyhS9/w/JIySg4jbyiuIBKZwUeVRCWkRkqbigcPVL2j8HO+7yQkQUiLCfjup9dEYI9M/hKXZq1QaGis/m1rn+aFvG/ED/qqpBiZDoa4+SWQn0XBtCakqp/Xdj5B1xqts7xnYhir9rq08L+NOlh8wJyj3XNsyZWx4abWOhQG4xDGWALEuz/1esCQCGTKZ0gwQ8F0gEP8td8YxAxOInuGWVGXIwMcuD8GpUQmsJ5hiGlv5qgdwPQ1yvASmEgEZkHVw7/09iva3bma1k5oTQhVWTctxyzKLwP31qiM+3RRLFCtDiz4R2rUD3/ND7eT9IhWEz2Fg/IAxAJLVX6KT2FdKX8b4Ny478jmhD0qsPuiHkKwNwCX5zRL3Hcc81y2eqdjqMbc32HDGwr/Zds4DH78cJyy5dS2di0LFyX5kbkAY4CC+6gWBSaIqtMAKeN9Zmb+onOoBEayGAj0EousW3k8/YdTSjFFdjU=
+script:
+- bash ./run-tests.sh
+branches:
+- only:
+  - master

@@ -1,0 +1,9 @@
+[package]
+authors = ["Andy Russell <arussell123@gmail.com>"]
+name = "travis-cargo"
+version = "0.1.0"
+
+[dependencies]
+docopt = "0.6.78"
+regex = "=0.1.38"
+rustc-serialize = "0.3.16"
