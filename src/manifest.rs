@@ -26,7 +26,7 @@ impl Target {
 pub struct Manifest(Json);
 
 impl Manifest {
-    pub fn new<P>(dir: P, version: &str) -> Self
+    pub fn new<P>(dir: P) -> Self
         where P: AsRef<Path>
     {
         // the --manifest-path behaviour changed in https://github.com/rust-lang/cargo/pull/1955,

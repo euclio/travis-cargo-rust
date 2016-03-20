@@ -73,7 +73,7 @@ fn main() {
         return;
     }
 
-    let manifest = Manifest::new(env::current_dir().unwrap(), &version);
+    let manifest = Manifest::new(env::current_dir().unwrap());
     match &args.arg_command[..] {
         "doc-upload" => doc_upload::doc_upload(manifest),
         "coverage" => coverage::coverage(&version),
