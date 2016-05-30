@@ -13,7 +13,8 @@ const USAGE: &'static str = r"
 Manages interactions between Travis and Cargo and common tooling tasks.
 
 Usage:
-    travis-cargo [-h] [-q] [--only VERSION] [--skip VERSION] <command> [<args>...]
+    travis-cargo [-h]
+    travis-cargo [-q] [--only VERSION] [--skip VERSION] <command> [<args>...]
 
 Options:
     --help -h       show this screen
