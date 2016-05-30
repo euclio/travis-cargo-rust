@@ -55,13 +55,14 @@ fn main() {
 
                           let phrases = ["nightly", "dev", "beta"];
                           phrases.iter()
+                                 .find(|&phrase| output.contains(phrase))
                                  .map(|&phrase| {
+                                     // a hand-compiled/dev compiler acts like nightly
                                      match phrase {
                                          "dev" => "nightly",
                                          _ => phrase,
                                      }
                                  })
-                                 .find(|&phrase| output.contains(phrase))
                                  .unwrap_or_default()
                                  .to_owned()
                       });
