@@ -80,15 +80,8 @@ fn main() {
         "doc-upload" => doc_upload::doc_upload(manifest),
         "coverage" => coverage::coverage(&version),
         "coveralls" => coverage::coveralls(&version),
-        ref command @ _ => {
-            if ["build", "bench", "test", "doc", "run", "rustc", "rustdoc"].contains(command) {
-                cargo::cargo_feature(&version, args.flag_quiet, &args.arg_command, &args.arg_args);
-            } else {
-                cargo::cargo_no_feature(&version,
-                                        args.flag_quiet,
-                                        &args.arg_command,
-                                        &args.arg_args);
-            }
+        _ => {
+            cargo::run(&version, args.flag_quiet, &args.arg_command, &args.arg_args);
         }
     }
 }

@@ -3,12 +3,36 @@ use std::process::Command;
 
 use utils;
 
-pub fn cargo_feature(version: &str, quiet: bool, command: &str, args: &[String]) {
-    cargo_raw(true, version, quiet, command, args);
-}
+pub const SUBCOMMAND_WANTS_FEATURE: &'static [&'static str] = &[
+    "build",
+    "bench",
+    "test",
+    "doc",
+    "install",
+    "run",
+    "rustc",
+    "rustdoc",
+    ];
 
-pub fn cargo_no_feature(version: &str, quiet: bool, command: &str, args: &[String]) {
-    cargo_raw(false, version, quiet, command, args);
+pub fn run(version: &str, quiet: bool, command: &str, args: &[String]) {
+    let mut cargo_args: Vec<String> = args.iter().cloned().collect();
+
+    let feature = SUBCOMMAND_WANTS_FEATURE.contains(&command);
+
+    if command == "bench" && version != "nightly" {
+        println!("skipping `cargo bench` on non-nightly version");
+        return;
+    }
+
+    if feature {
+        add_features(&mut cargo_args, version);
+    }
+
+    if !quiet && !cargo_args.contains(&"--verbose".to_owned()) && !args.contains(&"-v".to_owned()) {
+        cargo_args.push("--verbose".into());
+    }
+
+    utils::run(Command::new("cargo").arg(command).args(&cargo_args));
 }
 
 pub fn add_features(cargo_args: &mut Vec<String>, version: &str) {
@@ -34,23 +58,4 @@ pub fn add_features(cargo_args: &mut Vec<String>, version: &str) {
             cargo_args.push(nightly_feature);
         }
     }
-}
-
-fn cargo_raw(feature: bool, version: &str, quiet: bool, command: &str, args: &[String]) {
-    let mut cargo_args: Vec<String> = args.iter().cloned().collect();
-
-    if command == "bench" && version != "nightly" {
-        println!("skipping `cargo bench` on non-nightly version");
-        return;
-    }
-
-    if feature {
-        add_features(&mut cargo_args, version);
-    }
-
-    if !quiet && !cargo_args.contains(&"--verbose".to_owned()) && !args.contains(&"-v".to_owned()) {
-        cargo_args.push("--verbose".into());
-    }
-
-    utils::run(Command::new("cargo").arg(command).args(&cargo_args));
 }
