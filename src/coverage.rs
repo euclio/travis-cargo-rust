@@ -168,9 +168,8 @@ fn build_kcov(use_sudo: bool, verify: bool) -> PathBuf {
 
     init.push_str(r"
     wget https://github.com/SimonKagstrom/kcov/archive/master.zip
-    unzip master.zip
-    mv kcov-master kcov
-    mkdir kcov/build
+    unzip -o master.zip
+    mkdir -p kcov-master/build
     ");
 
     for line in init.split("\n") {
@@ -183,7 +182,7 @@ fn build_kcov(use_sudo: bool, verify: bool) -> PathBuf {
     }
 
     let current = env::current_dir().unwrap();
-    env::set_current_dir("kcov/build").unwrap();
+    env::set_current_dir("kcov-master/build").unwrap();
 
     let build = r"
         cmake ..
@@ -199,7 +198,7 @@ fn build_kcov(use_sudo: bool, verify: bool) -> PathBuf {
     }
 
     env::set_current_dir(&current).unwrap();
-    current.join("kcov/build/src/kcov")
+    current.join("kcov-master/build/src/kcov")
 }
 
 
