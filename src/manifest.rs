@@ -70,13 +70,19 @@ impl Manifest {
     }
 
     pub fn lib_name(&self) -> Option<String> {
+        let lib_types = ["lib", "dylib", "staticlib", "rlib"];
+
         for target in self.targets().unwrap() {
-            if target.0
+            let kinds = target.0
                      .find("kind")
                      .unwrap()
                      .as_array()
-                     .unwrap()
-                     .contains(&Json::String("lib".into())) {
+                .unwrap();
+
+            let is_lib_target =
+                kinds.iter().any(|kind| kind.as_string().map_or(false, |s| lib_types.contains(&s)));
+
+            if is_lib_target {
                 return Some(target.0.find("name").unwrap().as_string().unwrap().replace("-", "_"));
             }
         }
