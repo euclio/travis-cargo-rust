@@ -47,6 +47,9 @@ pub fn doc_upload(manifest: Manifest) {
         // won't decrypt secret keys for PRs, so loading this with the
         // other vars causes problems with tests)
         let token = env::var("GH_TOKEN").unwrap();
+        let commit = utils::run_output(Command::new("git").args(&["rev-parse", "--short", "HEAD"]));
+        let msg = format!("Documentation for {}@{}", repo, commit.trim());
+
         println!("uploading docs...");
         let mut file = File::create("target/doc/index.html").unwrap();
         writeln!(file,
@@ -56,7 +59,7 @@ pub fn doc_upload(manifest: Manifest) {
 
         utils::run(Command::new("git").args(&["clone", "https://github.com/davisp/ghp-import"]));
         utils::run(Command::new("python")
-                       .args(&["./ghp-import/ghp_import.py", "-n", "target/doc"]));
+                       .args(&["./ghp-import/ghp_import.py", "-n", "-m", &msg, "target/doc"]));
         let repo_url = format!("https://{}@github.com/{}.git", token, repo);
         utils::run_filter(&token,
                           Command::new("git").args(&["push", "-fq", &repo_url, "gh-pages"]));

@@ -42,6 +42,11 @@ optional arguments:
                          pass additional arguments to kcov, apart from `--verify` and
                          `--exclude-pattern`, when recording coverage. Specify multiple times for
                          multiple arguments. Example: --kcov-options="--debug=31"
+
+    --no-link-dead-code
+                        By default, travis_cargo passes `-C link-dead-code` to rustc during
+                        compilation. This can lead to more accurate code coverage if your compiler
+                        supports it. This flags allows users to opt out of linking dead code.
 "#;
 
 #[derive(Debug, RustcDecodable)]
@@ -49,6 +54,7 @@ struct CoverageArgs {
     flag_merge_into: Option<String>,
     flag_no_sudo: bool,
     flag_verify: bool,
+    flag_no_link_dead_code: bool,
     arg_args: Vec<String>,
     flag_kcov_args: Vec<String>,
     flag_exclude_pattern: Option<String>,
@@ -89,6 +95,11 @@ optional arguments:
                          pass additional arguments to kcov, apart from `--verify` and
                          `--exclude-pattern`, when recording coverage. Specify multiple times for
                          multiple arguments. Example: --kcov-options="--debug=31"
+
+    --no-link-dead-code
+                        By default, travis_cargo passes `-C link-dead-code` to rustc during
+                        compilation. This can lead to more accurate code coverage if your compiler
+                        supports it. This flags allows users to opt out of linking dead code.
 "#;
 
 #[derive(Debug, RustcDecodable)]
@@ -96,6 +107,7 @@ struct CoverallsArgs {
     flag_merge_into: Option<String>,
     flag_no_sudo: bool,
     flag_verify: bool,
+    flag_no_link_dead_code: bool,
     arg_args: Vec<String>,
     flag_kcov_args: Vec<String>,
     flag_exclude_pattern: Option<String>,
@@ -112,6 +124,7 @@ pub fn coverage(version: &str) {
     let kcov_merge_dir = args.flag_merge_into.unwrap_or("target/kcov".into());
     raw_coverage(!args.flag_no_sudo,
                  args.flag_verify,
+                 !args.flag_no_link_dead_code,
                  &cargo_args,
                  "Merging coverage",
                  &[],
@@ -133,6 +146,7 @@ pub fn coveralls(version: &str) {
     let kcov_merge_dir = args.flag_merge_into.unwrap_or("target/kcov".into());
     raw_coverage(!args.flag_no_sudo,
                  args.flag_verify,
+                 !args.flag_no_link_dead_code,
                  &cargo_args,
                  "Uploading coverage",
                  &[format!("--coveralls-id={}", job_id)],
@@ -154,9 +168,8 @@ fn build_kcov(use_sudo: bool, verify: bool) -> PathBuf {
 
     init.push_str(r"
     wget https://github.com/SimonKagstrom/kcov/archive/master.zip
-    unzip master.zip
-    mv kcov-master kcov
-    mkdir kcov/build
+    unzip -o master.zip
+    mkdir -p kcov-master/build
     ");
 
     for line in init.split("\n") {
@@ -169,7 +182,7 @@ fn build_kcov(use_sudo: bool, verify: bool) -> PathBuf {
     }
 
     let current = env::current_dir().unwrap();
-    env::set_current_dir("kcov/build").unwrap();
+    env::set_current_dir("kcov-master/build").unwrap();
 
     let build = r"
         cmake ..
@@ -185,12 +198,13 @@ fn build_kcov(use_sudo: bool, verify: bool) -> PathBuf {
     }
 
     env::set_current_dir(&current).unwrap();
-    current.join("kcov/build/src/kcov")
+    current.join("kcov-master/build/src/kcov")
 }
 
 
 fn raw_coverage<P>(use_sudo: bool,
                    verify: bool,
+                   link_dead_code: bool,
                    test_args: &[String],
                    merge_message: &str,
                    kcov_merge_args: &[String],
@@ -206,11 +220,30 @@ fn raw_coverage<P>(use_sudo: bool,
     // Look through the output of `cargo test` to find the test binaries.
     // FIXME: the information cargo feeds us is inconsistent/inaccurate, so using hte output of
     // read-manifest is far too much trouble.
-    let output = utils::run_output(Command::new("cargo").arg("test").args(&test_args));
+    let mut command = Command::new("cargo");
+    command.arg("test").args(&test_args);
+
+    if link_dead_code {
+        let existing = env::var("RUSTFLAGS").unwrap_or(String::new());
+        command.env("RUSTFLAGS", existing + " -C link-dead-code");
+        // we''ll need to recompile everything with the new flag, so
+        // let's start from the start
+        utils::run(Command::new("cargo").arg("clean").arg("-v"));
+    }
+
+    let output = utils::run_output(&mut command);
+
     let running = Regex::new("(?m)^     Running target/debug/(.*)$").unwrap();
     for cap in running.captures_iter(&output) {
         test_binaries.push(cap.at(1).unwrap().to_owned());
     }
+
+    // dynamic dependencies aren't found properly under kcov without a manual hint.
+    let mut ld_library_path = env::var("LD_LIBRARY_PATH").unwrap_or(String::new());
+    if !ld_library_path.is_empty() {
+        ld_library_path.push_str(":")
+    }
+    ld_library_path.push_str("target/debug/deps");
 
     // Record coverage for each binary
     for binary in test_binaries.iter() {
@@ -242,7 +275,8 @@ fn raw_coverage<P>(use_sudo: bool,
         }
         println!("");
 
-        utils::run(Command::new(kcov.clone()).args(&kcov_args));
+        utils::run(Command::new(kcov.clone()).args(&kcov_args)
+                       .env("LD_LIBRARY_PATH", &ld_library_path));
     }
 
     // Merge all the coverages and upload in one go
