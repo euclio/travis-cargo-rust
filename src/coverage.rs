@@ -238,6 +238,13 @@ fn raw_coverage<P>(use_sudo: bool,
         test_binaries.push(cap.at(1).unwrap().to_owned());
     }
 
+    // dynamic dependencies aren't found properly under kcov without a manual hint.
+    let mut ld_library_path = env::var("LD_LIBRARY_PATH").unwrap_or(String::new());
+    if !ld_library_path.is_empty() {
+        ld_library_path.push_str(":")
+    }
+    ld_library_path.push_str("target/debug/deps");
+
     // Record coverage for each binary
     for binary in test_binaries.iter() {
         println!("Recording {}", binary);
@@ -268,7 +275,8 @@ fn raw_coverage<P>(use_sudo: bool,
         }
         println!("");
 
-        utils::run(Command::new(kcov.clone()).args(&kcov_args));
+        utils::run(Command::new(kcov.clone()).args(&kcov_args)
+                       .env("LD_LIBRARY_PATH", &ld_library_path));
     }
 
     // Merge all the coverages and upload in one go
